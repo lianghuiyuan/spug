@@ -142,7 +142,7 @@ class Ext1Form extends React.Component {
           <Form.Item required label="选择分支/标签/版本" extra={<span>
             根据网络情况，首次刷新可能会很慢，请耐心等待。
             <a target="_blank" rel="noopener noreferrer"
-               href="https://spug.dev/docs/install-error/#%E6%96%B0%E5%BB%BA%E5%B8%B8%E8%A7%84%E5%8F%91%E5%B8%83%E7%94%B3%E8%AF%B7-git-clone-%E9%94%99%E8%AF%AF">clone 失败？</a>
+               href="https://spug.cc/docs/install-error/#%E6%96%B0%E5%BB%BA%E5%B8%B8%E8%A7%84%E5%8F%91%E5%B8%83%E7%94%B3%E8%AF%B7-git-clone-%E9%94%99%E8%AF%AF">clone 失败？</a>
           </span>}>
             <Col span={19}>
               <Input.Group compact>
@@ -161,7 +161,14 @@ class Ext1Form extends React.Component {
                     Object.keys(branches || {}).map(b => <Select.Option key={b} value={b}>{b}</Select.Option>)
                   ) : (
                     Object.entries(tags || {}).map(([tag, info]) => (
-                      <Select.Option key={tag} value={tag}>{`${tag} ${info.author} ${info.message}`}</Select.Option>
+                      <Select.Option key={tag} value={tag}>
+                        <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                          <span style={{width: 200, overflow: 'hidden', textOverflow: 'ellipsis'}}>
+                            {`${tag} ${info.author} ${info.message}`}
+                          </span>
+                          <span style={{color: '#999', fontSize: 12}}>{info['date']} </span>
+                        </div>
+                      </Select.Option>
                     ))
                   )}
                 </Select>
@@ -177,8 +184,14 @@ class Ext1Form extends React.Component {
             <Form.Item required label="选择Commit ID">
               <Select value={extra2} placeholder="请选择" onChange={v => this.setState({extra2: v})}>
                 {extra1 && branches ? branches[extra1].map(item => (
-                  <Select.Option
-                    key={item.id}>{item.id.substr(0, 6)} {item['date']} {item['author']} {item['message']}</Select.Option>
+                  <Select.Option key={item.id}>
+                    <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                      <span style={{width: 400, overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: 'Courier'}}>
+                        {item.id.substr(0, 6)} {item['author']} {item['message']}
+                      </span>
+                      <span style={{color: '#999', fontSize: 12}}>{item['date']} </span>
+                    </div>
+                  </Select.Option>
                 )) : null}
               </Select>
             </Form.Item>

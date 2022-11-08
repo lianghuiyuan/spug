@@ -12,24 +12,27 @@ class Command(BaseCommand):
     help = '升级Spug版本'
 
     def handle(self, *args, **options):
-        res = requests.get('https://gitee.com/api/v5/repos/openspug/spug/releases/latest').json()
-        version, is_repair = res.get('tag_name'), False
-        if not version:
-            return self.stderr.write(self.style.ERROR('获取新版本失败，排除网络问题后请附带输出内容至官方论坛反馈'))
-        if version == settings.SPUG_VERSION:
-            self.stdout.write(self.style.SUCCESS(''))
+        version, is_repair = settings.SPUG_VERSION, False
+        res = requests.get(f'https://api.spug.cc/apis/release/latest/?version={version}').json()
+        if res['error']:
+            return self.stderr.write(self.style.ERROR(f'获取新版本失败：{res["error"]}'))
+        if not res['data']['has_new']:
+            self.stdout.write(res['data']['extra'])
             is_repair = True
-            answer = input(f'当前已是最新版本，是否要进行修复性更新[y|n]？')
+            answer = input(f'\r\n当前已是最新版本，是否要进行修复性更新[y|n]？')
         else:
-            self.stdout.write(f'{version} 更新日志：\r\n' + res.get('body', ''))
-            answer = input(f'发现新版本 {version} 是否更新[y|n]？')
+            version = res['data']['version']
+            self.stdout.write(res['data']['content'])
+            self.stdout.write('\r\n')
+            self.stdout.write(res['data']['extra'])
+            answer = input(f'\r\n发现新版本 {version} 是否更新[y|n]？')
         if answer.lower() != 'y':
             return
 
         # update web
         web_dir = os.path.join(settings.BASE_DIR, '../spug_web')
         commands = [
-            f'curl -o /tmp/spug_web.tar.gz http://cdn.qbangmang.com/spug/web_{version}.tar.gz',
+            f'curl -o /tmp/spug_web.tar.gz https://cdn.spug.cc/spug/web_{version}.tar.gz',
             f'rm -rf {web_dir}/build',
             f'tar xf /tmp/spug_web.tar.gz -C {web_dir}'
         ]
@@ -64,7 +67,7 @@ class Command(BaseCommand):
             f'cd {settings.BASE_DIR}',
             f'python3 ./manage.py makemigrations ' + ' '.join(apps),
             f'python3 ./manage.py migrate',
-            f'python3 ./tools/migrate.py {version}'
+            f'python3 ./tools/migrate.py {settings.SPUG_VERSION}'
         ]
         task = subprocess.Popen(' && '.join(commands), shell=True)
         if task.wait() != 0:
@@ -73,4 +76,6 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS('''升级成功，请自行重启服务，如果通过官方文档安装一般重启命令为
         Docker: docker restart spug
         Centos: systemctl restart supervisord 
-        Ubuntu: systemctl restart supervisor'''))
+        Ubuntu: systemctl restart supervisor
+        '''))
+        self.stderr.write(self.style.WARNING(f'最后别忘了刷新浏览器，确保系统设置/关于里的api与web版本一致哦～'))
